@@ -1,7 +1,7 @@
 resource "aws_security_group" "elasticsearch" {
   name        = "hab_elasticsearch_sg"
   description = "Elasticsearch"
-  vpc_id      = "${var.es_vpc_id}"     //"vpc-5ef5af27"
+  vpc_id      = "${var.vpc_id}"
 
   ingress {
     from_port = 9638
@@ -11,10 +11,17 @@ resource "aws_security_group" "elasticsearch" {
   }
 
   ingress {
+    from_port = 9300
+    to_port   = 9300
+    protocol  = "tcp"
+    self      = true
+  }
+
+  ingress {
     from_port = 22
     to_port   = 22
     protocol  = "tcp"
-    self      = true
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
@@ -54,20 +61,33 @@ resource "aws_security_group" "elasticsearch" {
 
   tags {
     Name  = "Elasticsearch Security Group"
-    X-Env = "${var.es_env}"
+    X-Env = "${var.environment}"
+  }
+}
+
+data "template_file" "es_master_config" {
+  template = "${file("${path.module}/templates/es_master.toml.tpl")}"
+
+  vars {
+    minimum_master_nodes = "${floor(("${var.master_node_count}")/2) + 1}"
   }
 }
 
 resource "aws_instance" "elasticsearch_master" {
-  key_name                    = "${var.es_master_key_name}"
-  subnet_id                   = "${var.es_master_subnet_id}"               //"subnet-bef3f3f6"
-  count                       = "${var.es_master_node_count}"
-  instance_type               = "${var.es_master_instance_type}"           //"t2.medium"
+  connection {
+    user        = "${var.master_image_user}"
+    private_key = "${var.master_private_key}"
+  }
+
+  key_name                    = "${var.master_key_name}"
+  subnet_id                   = "${var.master_subnet_id}"
+  count                       = "${var.master_node_count}"
+  instance_type               = "${var.master_instance_type}"
   vpc_security_group_ids      = ["${aws_security_group.elasticsearch.id}"]
   associate_public_ip_address = true
-  ami                         = "${var.es_master_ami_id}"                  //"ami-43a15f3e"
-  availability_zone           = "${var.es_master_az}"                      //"us-east-1a"
-  user_data                   = "${file("config/user_data.sh")}"
+  ami                         = "${var.master_ami_id}"
+  availability_zone           = "${var.master_az}"
+  user_data                   = "${file("${path.module}/config/user_data.sh")}"
 
   provisioner "habitat" {
     peer         = "${aws_instance.elasticsearch_master.0.private_ip}"
@@ -78,34 +98,38 @@ resource "aws_instance" "elasticsearch_master" {
       name      = "gscho/elasticsearch"
       topology  = "leader"
       group     = "cluster"
-      user_toml = "${file("./es.toml")}"
+      user_toml = "${data.template_file.es_master_config.rendered}"
     }
   }
 
   tags {
     Name  = "${format("Elasticsearch Master %03d", count.index +1)}"
-    X-Env = "${var.es_env}"
+    X-Env = "${var.environment}"
   }
+}
+
+data "template_file" "es_data_config" {
+  template = "${file("${path.module}/templates/es_data.toml.tpl")}"
 }
 
 resource "aws_instance" "elasticsearch_data" {
   connection {
-    user        = "${var.es_image_user}"             //"ubuntu"
-    private_key = "${file("${var.es_private_key}")}"
+    user        = "${var.data_image_user}"
+    private_key = "${var.data_private_key}"
   }
 
-  key_name                    = "${aws_key_pair.elasticsearch.id}"
-  subnet_id                   = "${var.es_data_subnet_id}"
-  count                       = "${var.es_data_node_count}"
-  instance_type               = "${var.es_data_instance_type}"
+  key_name                    = "${var.data_key_name}"
+  subnet_id                   = "${var.data_subnet_id}"
+  count                       = "${var.data_node_count}"
+  instance_type               = "${var.data_instance_type}"
   vpc_security_group_ids      = ["${aws_security_group.elasticsearch.id}"]
   associate_public_ip_address = true
-  ami                         = "${var.es_data_ami_id}"
-  availability_zone           = "${var.es_data_az}"
-  user_data                   = "${file("config/user_data.sh")}"
+  ami                         = "${var.data_ami_id}"
+  availability_zone           = "${var.data_az}"
+  user_data                   = "${file("${path.module}/config/user_data.sh")}"
 
   provisioner "habitat" {
-    peer         = "${aws_instance.es.0.private_ip}"
+    peer         = "${aws_instance.elasticsearch_master.0.private_ip}"
     use_sudo     = true
     service_type = "systemd"
 
@@ -113,12 +137,12 @@ resource "aws_instance" "elasticsearch_data" {
       name      = "gscho/elasticsearch"
       topology  = "leader"
       group     = "cluster"
-      user_toml = "${file("./es.toml")}"
+      user_toml = "${data.template_file.es_data_config.rendered}"
     }
   }
 
   tags {
     Name  = "${format("Elasticsearch Data %03d", count.index +1)}"
-    X-Env = "${var.es_env}"
+    X-Env = "${var.environment}"
   }
 }

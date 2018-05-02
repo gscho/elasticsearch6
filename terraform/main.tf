@@ -1,20 +1,33 @@
 provider "aws" {
-  region     = "${var.es_region}"     //"us-east-1"
-  access_key = "${var.es_access_key}" //"AKIAIHQJSFOAPFYD7FCQ"
-  secret_key = "${var.es_secret_key}" //"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"
+  region     = "${var.region}"
+  access_key = "${var.access_key}"
+  secret_key = "${var.secret_key}"
+}
+
+resource "aws_key_pair" "elasticsearch" {
+  key_name   = "elasticsearch"
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDegRe6I9ytSXkxKfcqcQju8j0N1HqP4/sGlP7WjbMs4a2eDWb+yLjhpNtal7bheQ59nXS7WW2qN87DEWnN2WJbeRv9eRAk4dQX8cLMdmKHGSNJsD+PJ3BnWlBqht/lg3lQnklHKVuGJoYZpn+6BzD5Pz7CPvA7Bxo6BBIgrTgDgMj3u4IpXAD967u4tGLofI12P8p46vsLdCwe3wNfhSj2f462CYwt6d5qWwRx4un5uuOU3w2n0BBatAVupOKibajwrqznQ2spMmmn9Sb9njST1R+dmDJbqsRTjXBFneFhzUAfrZb16dh0yJ220uEzNOWTk6rlbITxYUkaqnJ31yt/ gschofield@Gregorys-MacBook-Pro.local"
 }
 
 module "elasticsearch" {
-  source        = "../elasticsearch"
-  vpc_id        = "${var.es_vpc_id}"
-  environment   = "${var.es_env}"
-  public_key    = "${var.es_public_key}"
-  user          = "${var.es_image_user}"             //"ubuntu"
-  private_key   = "${file("${var.es_private_key}")}"
-  subnet_id     = "${var.es_master_subnet_id}"       //"subnet-bef3f3f6"
-  count         = "${var.master_node_count}"
-  instance_type = "${var.es_master_instance_type}"
+  source               = "elasticsearch"
+  vpc_id               = "${var.vpc_id}"
+  environment          = "${var.environment}"
+  master_image_user    = "ubuntu"
+  master_private_key   = "${file("./es.pem")}"
+  master_key_name      = "${aws_key_pair.elasticsearch.id}"
+  master_subnet_id     = "${var.master_subnet_id}"
+  master_instance_type = "${var.master_instance_type}"
+  master_ami_id        = "${var.master_ami_id}"
+  master_az            = "${var.master_az}"
+  master_node_count    = "${var.master_node_count}"
 
-  ami               = "${var.es_master_ami_id}" //"ami-43a15f3e"
-  availability_zone = "${var.es_master_az}"
+  data_image_user    = "ubuntu"
+  data_private_key   = "${file("./es.pem")}"
+  data_key_name      = "${aws_key_pair.elasticsearch.id}"
+  data_subnet_id     = "${var.data_subnet_id}"
+  data_instance_type = "${var.data_instance_type}"
+  data_ami_id        = "${var.data_ami_id}"
+  data_az            = "${var.data_az}"
+  data_node_count    = "${var.data_node_count}"
 }
