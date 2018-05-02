@@ -6,7 +6,7 @@ provider "aws" {
 
 resource "aws_key_pair" "elasticsearch" {
   key_name   = "elasticsearch"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDegRe6I9ytSXkxKfcqcQju8j0N1HqP4/sGlP7WjbMs4a2eDWb+yLjhpNtal7bheQ59nXS7WW2qN87DEWnN2WJbeRv9eRAk4dQX8cLMdmKHGSNJsD+PJ3BnWlBqht/lg3lQnklHKVuGJoYZpn+6BzD5Pz7CPvA7Bxo6BBIgrTgDgMj3u4IpXAD967u4tGLofI12P8p46vsLdCwe3wNfhSj2f462CYwt6d5qWwRx4un5uuOU3w2n0BBatAVupOKibajwrqznQ2spMmmn9Sb9njST1R+dmDJbqsRTjXBFneFhzUAfrZb16dh0yJ220uEzNOWTk6rlbITxYUkaqnJ31yt/ gschofield@Gregorys-MacBook-Pro.local"
+  public_key = "${file("./es.pub")}"
 }
 
 module "elasticsearch" {
