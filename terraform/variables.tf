@@ -53,3 +53,19 @@ variable "data_ami_id" {
 variable "data_az" {
   default = "us-east-1a"
 }
+
+variable "kibana_subnet_id" {
+  default = "subnet-bef3f3f6"
+}
+
+variable "kibana_instance_type" {
+  default = "t2.medium"
+}
+
+variable "kibana_ami_id" {
+  default = "ami-43a15f3e"
+}
+
+variable "kibana_az" {
+  default = "us-east-1a"
+}

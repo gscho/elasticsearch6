@@ -33,7 +33,7 @@ variable "master_node_count" {
 }
 
 variable "data_image_user" {
-  defult = "ubuntu"
+  default = "ubuntu"
 }
 
 variable "data_private_key" {}
@@ -56,4 +56,32 @@ variable "data_az" {
 
 variable "data_node_count" {
   default = 2
+}
+
+variable "kibana_image_user" {
+  default = "ubuntu"
+}
+
+variable "kibana_private_key" {}
+
+variable "kibana_key_name" {
+  default = "elasticsearch"
+}
+
+variable "kibana_subnet_id" {}
+
+variable "kibana_instance_type" {
+  default = "t2.medium"
+}
+
+variable "kibana_ami_id" {
+  default = "ami-43a15f3e"
+}
+
+variable "kibana_az" {
+  default = "us-east-1a"
+}
+
+variable "kibana_node_count" {
+  default = 1
 }
